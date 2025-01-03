@@ -4,7 +4,7 @@ from .obfuscation import is_obfuscated_class_name, is_obfuscated_class, is_obfus
 
 
 def encode_access_flags(access_flags):
-    return sum(int(flag) for flag in access_flags)
+    return sum(int(flag.value) for flag in access_flags)
 
 def encode_simple_class(fullname: str):
     if not is_obfuscated_class_name(fullname):
@@ -18,7 +18,7 @@ def encode_type(typ: DEX.Type):
         # array dimensionality (0 for non-arrays)
         typ.dim,
         # actual type: enum for primitives, simple class encoding for classes
-        int(utyp.value) if utyp.type == DEX.Type.TYPES.PRIMITIVE else encode_simple_class(str(utyp))
+        int(utyp.value.value) if utyp.type == DEX.Type.TYPES.PRIMITIVE else encode_simple_class(str(utyp))
     )
 
 def encode_field(field: DEX.Field):
