@@ -38,7 +38,7 @@ def _gather_votes(class_a, class_b):
             if vote is not None:
                 yield vote
 
-def map(only_obfuscated: bool, classes_a, classes_b):
+def map(classes_a, classes_b, only_obfuscated: bool=False, propagate: bool=True):
     logger.info(f'classes in input A: {len(classes_a)}')
     logger.info(f'classes in input B: {len(classes_b)}')
 
@@ -49,25 +49,29 @@ def map(only_obfuscated: bool, classes_a, classes_b):
 
     logger.info(f'heckel diff mapped classes: {len(mapping)}')
 
-    classes_mapping = {classes_a[k]: classes_b[v] for k, v in mapping.items()}
-    votes = Counter(vote for class_a, class_b in classes_mapping.items() for vote in _gather_votes(class_a, class_b))
+    if propagate:
 
-    logger.info(f'propagation votes: {len(votes)} ({votes.total()} total)')
+        classes_mapping = {classes_a[k]: classes_b[v] for k, v in mapping.items()}
+        votes = Counter(vote for class_a, class_b in classes_mapping.items() for vote in _gather_votes(class_a, class_b))
+
+        logger.info(f'propagation votes: {len(votes)} ({votes.total()} total)')
 
     mapping = {classes_a[k].fullname: classes_b[v].fullname for k, v in mapping.items()}
 
-    mapped_a = set(mapping.keys())
-    mapped_b = set(mapping.values())
+    if propagate:
 
-    for class_a, class_b in sorted(votes, key=votes.get):
-        if class_a in mapped_a or class_b in mapped_b:
-            continue
+        mapped_a = set(mapping.keys())
+        mapped_b = set(mapping.values())
 
-        mapping[class_a] = class_b
-        mapped_a.add(class_a)
-        mapped_b.add(class_b)
+        for class_a, class_b in sorted(votes, key=votes.get):
+            if class_a in mapped_a or class_b in mapped_b:
+                continue
 
-    logger.info(f'propagation mapped classes: {len(mapping)}')
+            mapping[class_a] = class_b
+            mapped_a.add(class_a)
+            mapped_b.add(class_b)
+
+        logger.info(f'propagation mapped classes: {len(mapping)}')
 
     if only_obfuscated:
         mapping = {k: v for k, v in mapping.items() if is_obfuscated_class_name(k)}
