@@ -1,0 +1,44 @@
+[build-system]
+requires = ["flit_core>=3.7"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "alpaka-re"
+version = "0.1.0"
+description = "A tool for mapping classes between different versions of the same APK."
+authors = [
+    { name = "Daniel Firer", email = "danielfirefire@gmail.com" },
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+requires-python = ">=3.7"
+keywords = ["apk", "android", "mapping", "reverse-engineering", "deobfuscation"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Security",
+]
+
+dependencies = [
+    "click",
+    "lief",
+]
+
+[project.urls]
+Homepage = "https://github.com/DanielFi/alpaka"
+Repository = "https://github.com/DanielFi/alpaka"
+"Bug Tracker" = "https://github.com/DanielFi/alpaka/issues"
+
+[project.scripts]
+alpaka = "alpaka.cli:main"
+
+[tool.flit.module]
+name = "alpaka"
