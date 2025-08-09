@@ -9,7 +9,7 @@ resolution-markers = [
 ]
 
 [[package]]
-name = "alpaka"
+name = "alpaka-re"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
