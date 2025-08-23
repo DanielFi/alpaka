@@ -1,3 +1,5 @@
+import math
+
 import lief.DEX as DEX
 
 from .obfuscation import is_obfuscated_class_name, is_obfuscated_class, is_obfuscated_field, is_obfuscated_method

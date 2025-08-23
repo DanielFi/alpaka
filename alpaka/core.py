@@ -5,7 +5,7 @@ import lief.DEX as DEX
 
 from .encoding import encode_class, encode_field, encode_method
 from .enigma import EnigmaMapping, EnigmaClass, EnigmaField, EnigmaMethod
-from .extraction import get_classes_from_dexs
+from .extraction import get_classes_from_dexs, get_methods_from_dexs
 from .obfuscation import is_obfuscated_class_name
 
 from .heckel_diff import diff as heckel_diff
@@ -20,9 +20,37 @@ def map(dexs_a: List[DEX.File], dexs_b: List[DEX.File], only_obfuscated: bool=Fa
     logger.info(f'classes in input A: {len(classes_a)}')
     logger.info(f'classes in input B: {len(classes_b)}')
 
+    ## phase 1 - heckel diff all classes
+    
     mapping = _map_items(classes_a, classes_b, encode_class, sentinals=False)
 
     logger.info(f'heckel diff mapped classes: {len(mapping)}')
+
+    ## phase 2 - heckel diff leftover methods
+
+    reverse_mapping = {v: k for k, v in mapping.items()}
+    methods_a = [mth if mth.cls not in mapping else mapping[mth.cls].fullname for mth in get_methods_from_dexs(dexs_a)]
+    methods_b = [mth if mth.cls not in reverse_mapping else mth.cls.fullname for mth in get_methods_from_dexs(dexs_b)]
+
+    method_or_name_encoder = lambda x: x if isinstance(x, str) else encode_method(x)
+    method_mapping = {k: v for k, v in _map_items(methods_a, methods_b, method_or_name_encoder).items() if not isinstance(k, str)}
+    reverse_method_mapping = {v: k for k, v in method_mapping.items()}
+
+    method_based_class_mapping = {}
+    for class_a in classes_a:
+        if class_a in mapping:
+            continue
+
+        method_mapped_class_candidates = [method_mapping[mth].cls for mth in class_a.methods if mth in method_mapping]
+        if len(set(method_mapped_class_candidates)) == 1:
+            class_b = method_mapped_class_candidates[0]
+            method_mapped_class_candidates = [reverse_method_mapping[mth].cls for mth in class_b.methods if mth in reverse_method_mapping]
+            if len(set(method_mapped_class_candidates)) == 1 and method_mapped_class_candidates[0] == class_a:
+                method_based_class_mapping[class_a] = class_b
+
+    mapping.update(method_based_class_mapping)
+
+    # clean-up output
 
     mapping = {class_a.fullname: class_b.fullname for class_a, class_b in mapping.items()}
 

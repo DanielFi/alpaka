@@ -34,3 +34,6 @@ def extract_dexs_from_apk(apk_path: str) -> List[DEX.File]:
 
 def get_classes_from_dexs(dexs: List[DEX.File]) -> List[DEX.Class]:
     return [cls for dex in dexs for cls in sorted(dex.classes, key=lambda cls: cls.index) if cls.index != 4294967295]
+
+def get_methods_from_dexs(dexs: List[DEX.File]) -> List[DEX.Method]:
+    return [mth for dex in dexs for mth in dex.methods if mth.cls.index != 4294967295]
