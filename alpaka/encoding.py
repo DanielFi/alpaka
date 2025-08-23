@@ -42,7 +42,13 @@ def encode_method(method: DEX.Method):
         # parameter types
         tuple(
             encode_type(parameter) for parameter in method.prototype.parameters_type
-        )
+        ),
+        # byte code length
+        # divided by a small constant B=2 to create small buckets, since it might change
+        # naturally across compilations
+        # B - 1 must be added before division to ensure that only empty methods are in
+        # the first bucket
+        (len(method.bytecode) + (2 - 1)) // 2
     )
 
 def encode_class(cls: DEX.Class):
