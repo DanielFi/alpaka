@@ -16,4 +16,4 @@ def is_obfuscated_field(field: DEX.Field) -> bool:
     return OBFUSCATED_INNER_NAME_PATTERN.match(field.name) is not None
 
 def is_obfuscated_method(method: DEX.Method) -> bool:
-    return OBFUSCATED_INNER_NAME_PATTERN.match(method.name) is not None
+    return DEX.ACCESS_FLAGS.CONSTRUCTOR not in method.access_flags and OBFUSCATED_INNER_NAME_PATTERN.match(method.name) is not None
