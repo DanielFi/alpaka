@@ -1,10 +1,10 @@
 from collections import Counter
 import logging
-from typing import Dict, List
+from typing import Callable, Dict, List, TypeVar
 
 import lief.DEX as DEX
 
-from .encoding import encode_class
+from .encoding import encode_class, encode_field, encode_method
 from .enigma import EnigmaMapping, EnigmaClass, EnigmaField, EnigmaMethod
 from .obfuscation import is_obfuscated_class_name
 
@@ -38,25 +38,20 @@ def _gather_votes(class_a, class_b):
             if vote is not None:
                 yield vote
 
-def map(classes_a, classes_b, only_obfuscated: bool=False, propagate: bool=True):
+def map(classes_a: List[DEX.Class], classes_b: List[DEX.Class], only_obfuscated: bool=False, propagate: bool=True):
     logger.info(f'classes in input A: {len(classes_a)}')
     logger.info(f'classes in input B: {len(classes_b)}')
 
-    encodings_a = [encode_class(cls) for cls in classes_a]
-    encodings_b = [encode_class(cls) for cls in classes_b]
-
-    mapping, reverse_mapping = heckel_diff(encodings_a, encodings_b)
+    mapping = _map_items(classes_a, classes_b, encode_class, sentinals=False)
 
     logger.info(f'heckel diff mapped classes: {len(mapping)}')
 
     if propagate:
-
-        classes_mapping = {classes_a[k]: classes_b[v] for k, v in mapping.items()}
-        votes = Counter(vote for class_a, class_b in classes_mapping.items() for vote in _gather_votes(class_a, class_b))
+        votes = Counter(vote for class_a, class_b in mapping.items() for vote in _gather_votes(class_a, class_b))
 
         logger.info(f'propagation votes: {len(votes)} ({votes.total()} total)')
 
-    mapping = {classes_a[k].fullname: classes_b[v].fullname for k, v in mapping.items()}
+    mapping = {class_a.fullname: class_b.fullname for class_a, class_b in mapping.items()}
 
     if propagate:
 
@@ -141,3 +136,42 @@ def deobfuscate(classes_a: List[DEX.Class], classes_b: List[DEX.Class], mapping:
             logger.warn(f'failed to map method {enigma_method.display_name} in class {enigma_class.display_name or "?"} ({enigma_class.name})')
 
     return EnigmaMapping(enigma_classes)
+
+def map_class_fields(class_a: DEX.Class, class_b: DEX.Class) -> Dict[int, int]:
+    fields_a = list(class_a.fields)
+    fields_b = list(class_b.fields)
+
+    return _map_items(fields_a, fields_b, encode_field)
+
+def map_class_methods(class_a: DEX.Class, class_b: DEX.Class) -> Dict[int, int]:
+    methods_a = list(class_a.methods)
+    methods_b = list(class_b.methods)
+
+    return _map_items(methods_a, methods_b, encode_method)
+
+T = TypeVar('T')
+
+def _map_items(items_a: List[T], items_b: List[T], encoder: Callable[[T], None], sentinals=True) -> Dict[T, T]:
+    # surround the encodings with unique sentinal values to ensure mapping
+    # happens even when there are no unique values
+    if sentinals:
+        encodings_a = ['START']
+        encodings_b = ['START']
+    else:
+        encodings_a = []
+        encodings_b = []
+
+    encodings_a.extend([encoder(item) for item in items_a])
+    encodings_b.extend([encoder(item) for item in items_b])
+
+    if sentinals:
+        encodings_a.append('END')
+        encodings_b.append('END')
+
+    mapping, reverse_mapping = heckel_diff(encodings_a, encodings_b)
+    if sentinals:
+        mapping = {items_a[k-1]: items_b[v-1] for k, v in mapping.items() if k != 0 and k != len(encodings_a) - 1}
+    else:
+        mapping = {items_a[k]: items_b[v] for k, v in mapping.items()}
+
+    return mapping

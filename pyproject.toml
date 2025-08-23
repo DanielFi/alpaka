@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "alpaka-re"
-version = "0.1.0"
+version = "0.2.0"
 description = "A tool for mapping classes between different versions of the same APK."
 authors = [
     { name = "Daniel Firer", email = "danielfirefire@gmail.com" },
