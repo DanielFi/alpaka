@@ -11,13 +11,13 @@ logger = logging.getLogger(__name__)
 
 _DEX_CACHE = [] # hack to prevent segfaults (lief objects become invalid if the DEX.File is freed)
 
-def extract_classes_from_dex(dex_path: str) -> List[DEX.Class]:
+def get_dex(dex_path: str) -> List[DEX.File]:
     dex = DEX.parse(dex_path)
     _DEX_CACHE.append(dex)
-    return list(sorted(dex.classes, key=lambda c: c.index))
+    return dex
 
-def extract_classes_from_apk(apk_path: str) -> List[DEX.Class]:
-    classes = []
+def extract_dexs_from_apk(apk_path: str) -> List[DEX.File]:
+    dexs = []
     tmp_dir = TemporaryDirectory()
 
     with ZipFile(apk_path) as z:
@@ -28,6 +28,9 @@ def extract_classes_from_apk(apk_path: str) -> List[DEX.Class]:
                 logger.info(f'APK {apk_path} has {i-1} dex files')
                 break
 
-            classes.extend(extract_classes_from_dex(z.extract(dex_filename, tmp_dir.name)))
+            dexs.append(get_dex(z.extract(dex_filename, tmp_dir.name)))
 
-    return classes
+    return dexs
+
+def get_classes_from_dexs(dexs: List[DEX.File]) -> List[DEX.Class]:
+    return [cls for dex in dexs for cls in sorted(dex.classes, key=lambda cls: cls.index) if cls.index != 4294967295]

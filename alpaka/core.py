@@ -6,6 +6,7 @@ import lief.DEX as DEX
 
 from .encoding import encode_class, encode_field, encode_method
 from .enigma import EnigmaMapping, EnigmaClass, EnigmaField, EnigmaMethod
+from .extraction import get_classes_from_dexs
 from .obfuscation import is_obfuscated_class_name
 
 from .heckel_diff import diff as heckel_diff
@@ -38,7 +39,10 @@ def _gather_votes(class_a, class_b):
             if vote is not None:
                 yield vote
 
-def map(classes_a: List[DEX.Class], classes_b: List[DEX.Class], only_obfuscated: bool=False, propagate: bool=True):
+def map(dexs_a: List[DEX.File], dexs_b: List[DEX.File], only_obfuscated: bool=False, propagate=True):
+    classes_a = get_classes_from_dexs(dexs_a)
+    classes_b = get_classes_from_dexs(dexs_b)
+
     logger.info(f'classes in input A: {len(classes_a)}')
     logger.info(f'classes in input B: {len(classes_b)}')
 
