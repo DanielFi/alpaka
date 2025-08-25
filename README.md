@@ -5,14 +5,14 @@
 
 -----
 
-Alpaka is a command-line tool designed for mapping classes across different
+Alpaka is a command-line tool designed for matching classes across different
 versions of the same APK. This is particularly useful for reverse engineering,
 allowing you to track class renames and changes across different builds, and
 preserving manual deobfuscation efforts.
 
 ## Features
 
-* Class Mapping: Generates a JSON mapping of classes from one APK version to another.
+* Class Matching: Generates a JSON matching of classes from one APK version to another.
 
 * Deobfuscation Migration: Migrate existing Enigma deobfuscation
   mapping files to new APK versions, helping maintain your renaming efforts
@@ -27,13 +27,13 @@ pip install ./alpaka
 
 ## Usage
 
-### Basic Class Mapping
+### Basic Class Matching
 
-Output a JSON mapping from `A.apk` (older version) to `B.apk` (newer version).
+Output a JSON matching from `A.apk` (older version) to `B.apk` (newer version).
 This will show how classes in `A.apk` correspond to classes in `B.apk`.
 
 ```console
-> alpaka map A.apk B.apk1
+> alpaka match A.apk B.apk1
 {
     "LX/003;": "LX/003;",
     "LX/004;": "LX/004;",
@@ -52,17 +52,17 @@ deobfuscation work when a new version of the APK is released.
 The generated `B.mapping` file can then be imported into tools like Jadx to preserve your manual renamings!
 
 ```console
-> alpaka map --deobfuscation A.mapping --only-obfuscated A.apk B.apk1 > B.mapping
+> alpaka match --deobfuscation A.mapping --only-obfuscated A.apk B.apk1 > B.mapping
 ```
 
 ### Advanced Options
 
-The `map` command supports several options to fine-tune its behavior:
+The `match` command supports several options to fine-tune its behavior:
 
-* `--only-obfuscated`: Prevents Alpaka from creating unnecessary mappings
+* `--only-obfuscated`: Prevents Alpaka from creating unnecessary matches
   between unobfuscated classes.
 * `--no-propagation`: Only run the first analysis stage. Usually leads to more
-  accurate results but fewer mappings overall.
+  accurate results but fewer matches overall.
 
 ## License
 

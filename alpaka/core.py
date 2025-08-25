@@ -14,48 +14,55 @@ from .heckel_diff import diff as heckel_diff
 
 logger = logging.getLogger(__name__)
 
-def _get_vote_for_types(type_a, type_b):
+def _get_vote_for_types(classes_a, classes_b, type_a, type_b):
     type_a = type_a.underlying_array_type
     type_b = type_b.underlying_array_type
 
     if type_a.type != DEX.Type.TYPES.CLASS or type_b.type != DEX.Type.TYPES.CLASS:
         return None
 
-    return str(type_a), str(type_b)
+    class_a = classes_a.get(str(type_a))
+    class_b = classes_b.get(str(type_b))
 
-def _gather_votes(class_a, class_b):
+    if class_a is not None and class_b is not None:
+        return class_a, class_b
+
+    return None
+
+def _gather_votes(classes_a, classes_b, class_a, class_b):
     for field_a, field_b in zip(class_a.fields, class_b.fields):
-        vote = _get_vote_for_types(field_a.type, field_b.type)
+        vote = _get_vote_for_types(classes_a, classes_b, field_a.type, field_b.type)
         if vote is not None:
             yield vote
     
     for method_a, method_b in zip(class_a.methods, class_b.methods):
-        vote = _get_vote_for_types(method_a.prototype.return_type, method_b.prototype.return_type)
+        vote = _get_vote_for_types(classes_a, classes_b, method_a.prototype.return_type, method_b.prototype.return_type)
         if vote is not None:
             yield vote
         
         for param_a, param_b in zip(method_a.prototype.parameters_type, method_b.prototype.parameters_type):
-            vote = _get_vote_for_types(param_a, param_b)
+            vote = _get_vote_for_types(classes_a, classes_b, param_a, param_b)
             if vote is not None:
                 yield vote
 
-def map(dexs_a: List[DEX.File], dexs_b: List[DEX.File], only_obfuscated: bool=False, propagate=True):
+def match_classes(dexs_a: List[DEX.File], dexs_b: List[DEX.File], only_obfuscated: bool=False, propagate=True) -> Dict[DEX.Class, DEX.Class]:
     classes_a = get_classes_from_dexs(dexs_a)
     classes_b = get_classes_from_dexs(dexs_b)
 
     logger.info(f'classes in input A: {len(classes_a)}')
     logger.info(f'classes in input B: {len(classes_b)}')
 
-    mapping = _map_items(classes_a, classes_b, encode_class, sentinals=False)
+    mapping = _match_items(classes_a, classes_b, encode_class, sentinals=False)
 
     logger.info(f'heckel diff mapped classes: {len(mapping)}')
 
+    classes_a = {cls.fullname: cls for cls in classes_a}
+    classes_b = {cls.fullname: cls for cls in classes_b}
+
     if propagate:
-        votes = Counter(vote for class_a, class_b in mapping.items() for vote in _gather_votes(class_a, class_b))
+        votes = Counter(vote for class_a, class_b in mapping.items() for vote in _gather_votes(classes_a, classes_b, class_a, class_b))
 
         logger.info(f'propagation votes: {len(votes)} ({votes.total()} total)')
-
-    mapping = {class_a.fullname: class_b.fullname for class_a, class_b in mapping.items()}
 
     if propagate:
 
@@ -73,7 +80,7 @@ def map(dexs_a: List[DEX.File], dexs_b: List[DEX.File], only_obfuscated: bool=Fa
         logger.info(f'propagation mapped classes: {len(mapping)}')
 
     if only_obfuscated:
-        mapping = {k: v for k, v in mapping.items() if is_obfuscated_class_name(k)}
+        mapping = {k: v for k, v in mapping.items() if is_obfuscated_class_name(k.fullname)}
 
     return mapping
 
@@ -141,21 +148,21 @@ def deobfuscate(classes_a: List[DEX.Class], classes_b: List[DEX.Class], mapping:
 
     return EnigmaMapping(enigma_classes)
 
-def map_class_fields(class_a: DEX.Class, class_b: DEX.Class) -> Dict[int, int]:
+def match_class_fields(class_a: DEX.Class, class_b: DEX.Class) -> Dict[int, int]:
     fields_a = list(class_a.fields)
     fields_b = list(class_b.fields)
 
-    return _map_items(fields_a, fields_b, encode_field)
+    return _match_items(fields_a, fields_b, encode_field)
 
-def map_class_methods(class_a: DEX.Class, class_b: DEX.Class) -> Dict[int, int]:
+def match_class_methods(class_a: DEX.Class, class_b: DEX.Class) -> Dict[int, int]:
     methods_a = list(class_a.methods)
     methods_b = list(class_b.methods)
 
-    return _map_items(methods_a, methods_b, encode_method)
+    return _match_items(methods_a, methods_b, encode_method)
 
 T = TypeVar('T')
 
-def _map_items(items_a: List[T], items_b: List[T], encoder: Callable[[T], None], sentinals=True) -> Dict[T, T]:
+def _match_items(items_a: List[T], items_b: List[T], encoder: Callable[[T], None], sentinals=True) -> Dict[T, T]:
     # surround the encodings with unique sentinal values to ensure mapping
     # happens even when there are no unique values
     if sentinals:
