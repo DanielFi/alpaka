@@ -10,17 +10,17 @@ class Symbol:
 
 
 class SymbolTable:
-    def __init__(self):
+    def __init__(self) -> None:
         self.entries = {}
 
-    def insert_old(self, symbol, line):
+    def insert_old(self, symbol, line) -> None:
         if symbol in self.entries:
             self.entries[symbol].old_count += 1
             self.entries[symbol].olno = line
         else:
             self.entries[symbol] = Symbol(1, 0, line)
 
-    def insert_new(self, symbol):
+    def insert_new(self, symbol) -> None:
         if symbol in self.entries:
             self.entries[symbol].new_count += 1
         else:

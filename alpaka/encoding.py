@@ -11,7 +11,7 @@ def encode_simple_class(fullname: str):
     if not is_obfuscated_class_name(fullname):
         return fullname
 
-    return tuple()
+    return ()
 
 
 def encode_type(typ: DEX.Type):

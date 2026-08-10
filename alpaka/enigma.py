@@ -7,7 +7,7 @@ METHOD_PATTERN = re.compile(r"\tMETHOD (\S+) (\S+) (\S+)")
 
 
 class EnigmaField:
-    def __init__(self, name: str, display_name: str, type: str):
+    def __init__(self, name: str, display_name: str, type: str) -> None:
         self.name = name
         self.display_name = display_name
         self.type = type
@@ -17,7 +17,7 @@ class EnigmaField:
 
 
 class EnigmaMethod:
-    def __init__(self, name: str, display_name: str, prototype: str):
+    def __init__(self, name: str, display_name: str, prototype: str) -> None:
         self.name = name
         self.display_name = display_name
         self.prototype = prototype
@@ -27,7 +27,7 @@ class EnigmaMethod:
 
 
 class EnigmaClass:
-    def __init__(self, name: str, display_name: str | None = None):
+    def __init__(self, name: str, display_name: str | None = None) -> None:
         self.name = name
         self.display_name = display_name
         self.fields: list[EnigmaField] = []
@@ -43,7 +43,7 @@ class EnigmaClass:
 
 
 class EnigmaMapping:
-    def __init__(self, classes: list[EnigmaClass]):
+    def __init__(self, classes: list[EnigmaClass]) -> None:
         self.classes = classes
 
     def __str__(self) -> str:

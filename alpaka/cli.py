@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 @click.group()
 @click.option("-v", "--verbose", is_flag=True)
-def main(verbose):
+def main(verbose) -> None:
     if verbose:
         logging.basicConfig(level=logging.INFO)
 
@@ -23,7 +23,7 @@ def main(verbose):
 @click.option("--deobfuscation", type=click.Path(exists=True))
 @click.argument("input_a", type=click.Path(exists=True))
 @click.argument("input_b", type=click.Path(exists=True))
-def match(only_obfuscated, no_propagation, deobfuscation, input_a, input_b):
+def match(only_obfuscated, no_propagation, deobfuscation, input_a, input_b) -> None:
     if deobfuscation is not None:
         deobfuscation = EnigmaMapping.parse(deobfuscation)
 

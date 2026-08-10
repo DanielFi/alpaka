@@ -31,17 +31,17 @@ def _get_vote_for_types(classes_a, classes_b, type_a, type_b):
 
 
 def _gather_votes(classes_a, classes_b, class_a, class_b):
-    for field_a, field_b in zip(class_a.fields, class_b.fields):
+    for field_a, field_b in zip(class_a.fields, class_b.fields, strict=False):
         vote = _get_vote_for_types(classes_a, classes_b, field_a.type, field_b.type)
         if vote is not None:
             yield vote
 
-    for method_a, method_b in zip(class_a.methods, class_b.methods):
+    for method_a, method_b in zip(class_a.methods, class_b.methods, strict=False):
         vote = _get_vote_for_types(classes_a, classes_b, method_a.prototype.return_type, method_b.prototype.return_type)
         if vote is not None:
             yield vote
 
-        for param_a, param_b in zip(method_a.prototype.parameters_type, method_b.prototype.parameters_type):
+        for param_a, param_b in zip(method_a.prototype.parameters_type, method_b.prototype.parameters_type, strict=False):
             vote = _get_vote_for_types(classes_a, classes_b, param_a, param_b)
             if vote is not None:
                 yield vote
@@ -130,17 +130,17 @@ def deobfuscate(
             continue
 
         original_enigma_fields = enigma_class.fields.copy()
-        original_enigma_methods = {m for m in enigma_class.methods}
+        original_enigma_methods = set(enigma_class.methods)
         enigma_class = EnigmaClass(new_name[1:-1], enigma_class.display_name)
         enigma_classes.append(enigma_class)
 
-        class_a = [cls for cls in classes_a if cls.fullname == old_name][0]
-        class_b = [cls for cls in classes_b if cls.fullname == new_name][0]
+        class_a = next(cls for cls in classes_a if cls.fullname == old_name)
+        class_b = next(cls for cls in classes_b if cls.fullname == new_name)
 
-        fields = list(zip(class_a.fields, class_b.fields))
+        fields = list(zip(class_a.fields, class_b.fields, strict=False))
         for enigma_field in original_enigma_fields:
             try:
-                field_a, field_b = [(f_a, f_b) for f_a, f_b in fields if f_a.name == enigma_field.name][0]
+                _field_a, field_b = next((f_a, f_b) for f_a, f_b in fields if f_a.name == enigma_field.name)
             except IndexError:
                 logger.warning(
                     f"failed to map field {enigma_field.display_name} in class {enigma_class.display_name or '?'} ({enigma_class.name})"
@@ -151,7 +151,7 @@ def deobfuscate(
                 EnigmaField(field_b.name, enigma_field.display_name, _lief_type_to_enigma(field_b.type))
             )
 
-        for method_a, method_b in zip(class_a.methods, class_b.methods):
+        for method_a, method_b in zip(class_a.methods, class_b.methods, strict=False):
             for enigma_method in original_enigma_methods:
                 if enigma_method.name == method_a.name and enigma_method.prototype == _lief_prototype_to_enigma(
                     method_a.prototype
@@ -208,7 +208,7 @@ def _match_items(items_a: list[T], items_b: list[T], encoder: Callable[[T], None
         encodings_a.append("END")
         encodings_b.append("END")
 
-    mapping, reverse_mapping = heckel_diff(encodings_a, encodings_b)
+    mapping, _reverse_mapping = heckel_diff(encodings_a, encodings_b)
     if sentinals:
         mapping = {items_a[k - 1]: items_b[v - 1] for k, v in mapping.items() if k != 0 and k != len(encodings_a) - 1}
     else:
