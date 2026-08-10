@@ -6,11 +6,13 @@ from .obfuscation import is_obfuscated_class_name, is_obfuscated_class, is_obfus
 def encode_access_flags(access_flags):
     return sum(int(flag.value) for flag in access_flags)
 
+
 def encode_simple_class(fullname: str):
     if not is_obfuscated_class_name(fullname):
         return fullname
 
     return tuple()
+
 
 def encode_type(typ: DEX.Type):
     utyp = typ.underlying_array_type if typ.type == DEX.Type.TYPES.ARRAY else typ
@@ -18,8 +20,9 @@ def encode_type(typ: DEX.Type):
         # array dimensionality (0 for non-arrays)
         typ.dim,
         # actual type: enum for primitives, simple class encoding for classes
-        int(utyp.value.value) if utyp.type == DEX.Type.TYPES.PRIMITIVE else encode_simple_class(str(utyp))
+        int(utyp.value.value) if utyp.type == DEX.Type.TYPES.PRIMITIVE else encode_simple_class(str(utyp)),
     )
+
 
 def encode_field(field: DEX.Field):
     return (
@@ -28,8 +31,9 @@ def encode_field(field: DEX.Field):
         # access flags
         encode_access_flags(field.access_flags),
         # type
-        encode_type(field.type)
+        encode_type(field.type),
     )
+
 
 def encode_method(method: DEX.Method):
     return (
@@ -40,16 +44,15 @@ def encode_method(method: DEX.Method):
         # return type
         encode_type(method.prototype.return_type),
         # parameter types
-        tuple(
-            encode_type(parameter) for parameter in method.prototype.parameters_type
-        ),
+        tuple(encode_type(parameter) for parameter in method.prototype.parameters_type),
         # byte code length
         # divided by a small constant B=2 to create small buckets, since it might change
         # naturally across compilations
         # B - 1 must be added before division to ensure that only empty methods are in
         # the first bucket
-        (len(method.bytecode) + (2 - 1)) // 2
+        (len(method.bytecode) + (2 - 1)) // 2,
     )
+
 
 def encode_class(cls: DEX.Class):
     if not is_obfuscated_class(cls):
@@ -61,11 +64,7 @@ def encode_class(cls: DEX.Class):
         # parent class
         None if not cls.has_parent else (encode_simple_class(cls.parent.fullname)),
         # fields
-        tuple(
-            encode_field(field) for field in cls.fields
-        ),
+        tuple(encode_field(field) for field in cls.fields),
         # methods
-        tuple(
-            encode_method(method) for method in cls.methods
-        )
+        tuple(encode_method(method) for method in cls.methods),
     )

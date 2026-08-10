@@ -11,7 +11,6 @@ class Symbol:
 
 
 class SymbolTable:
-
     def __init__(self):
         self.entries = {}
 
@@ -32,7 +31,7 @@ class SymbolTable:
         return self.entries[symbol]
 
 
-def diff(old : List[Any], new : List[Any]):
+def diff(old: List[Any], new: List[Any]):
 
     symbol_table = SymbolTable()
 
