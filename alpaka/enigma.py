@@ -1,7 +1,5 @@
-from typing import Iterable, List, Optional
-from pathlib import Path
 import re
-
+from collections.abc import Iterable
 
 CLASS_PATTERN = re.compile(r"CLASS (\S+)(?: (\S+))?")
 FIELD_PATTERN = re.compile(r"\tFIELD (\S+) (\S+) (\S+)")
@@ -29,23 +27,23 @@ class EnigmaMethod:
 
 
 class EnigmaClass:
-    def __init__(self, name: str, display_name: Optional[str] = None):
+    def __init__(self, name: str, display_name: str | None = None):
         self.name = name
         self.display_name = display_name
-        self.fields: List[EnigmaField] = []
-        self.methods: List[EnigmaMethod] = []
+        self.fields: list[EnigmaField] = []
+        self.methods: list[EnigmaMethod] = []
 
     def __str__(self) -> str:
         result = [f"CLASS {self.name} {self.display_name or ''}"]
         for field in self.fields:
-            result.append(f"\t{str(field)}")
+            result.append(f"\t{field!s}")
         for method in self.methods:
-            result.append(f"\t{str(method)}")
+            result.append(f"\t{method!s}")
         return "\n".join(result)
 
 
 class EnigmaMapping:
-    def __init__(self, classes: List[EnigmaClass]):
+    def __init__(self, classes: list[EnigmaClass]):
         self.classes = classes
 
     def __str__(self) -> str:
@@ -58,9 +56,9 @@ class EnigmaMapping:
     def parse(cls, path: str) -> "EnigmaMapping":
         classes = []
 
-        with open(path, "r") as f:
+        with open(path) as f:
             current_class = None
-            for line in f.readlines():
+            for line in f:
                 if match := CLASS_PATTERN.match(line):
                     current_class = EnigmaClass(match.group(1), match.group(2))
                     classes.append(current_class)

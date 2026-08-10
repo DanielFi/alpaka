@@ -1,6 +1,6 @@
-import lief.DEX as DEX
+from lief import DEX
 
-from .obfuscation import is_obfuscated_class_name, is_obfuscated_class, is_obfuscated_field, is_obfuscated_method
+from .obfuscation import is_obfuscated_class, is_obfuscated_class_name, is_obfuscated_field, is_obfuscated_method
 
 
 def encode_access_flags(access_flags):

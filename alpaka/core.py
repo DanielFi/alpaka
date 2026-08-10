@@ -1,16 +1,15 @@
-from collections import Counter
 import logging
-from typing import Callable, Dict, List, TypeVar
+from collections import Counter
+from collections.abc import Callable
+from typing import TypeVar
 
-import lief.DEX as DEX
+from lief import DEX
 
 from .encoding import encode_class, encode_field, encode_method
-from .enigma import EnigmaMapping, EnigmaClass, EnigmaField, EnigmaMethod
+from .enigma import EnigmaClass, EnigmaField, EnigmaMapping, EnigmaMethod
 from .extraction import get_classes_from_dexs
-from .obfuscation import is_obfuscated_class_name
-
 from .heckel_diff import diff as heckel_diff
-
+from .obfuscation import is_obfuscated_class_name
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +48,8 @@ def _gather_votes(classes_a, classes_b, class_a, class_b):
 
 
 def match_classes(
-    dexs_a: List[DEX.File], dexs_b: List[DEX.File], only_obfuscated: bool = False, propagate=True
-) -> Dict[DEX.Class, DEX.Class]:
+    dexs_a: list[DEX.File], dexs_b: list[DEX.File], only_obfuscated: bool = False, propagate=True
+) -> dict[DEX.Class, DEX.Class]:
     classes_a = get_classes_from_dexs(dexs_a)
     classes_b = get_classes_from_dexs(dexs_b)
 
@@ -116,9 +115,9 @@ def _lief_prototype_to_enigma(prototype: DEX.Prototype) -> str:
 
 
 def deobfuscate(
-    classes_a: List[DEX.Class],
-    classes_b: List[DEX.Class],
-    mapping: Dict[str, str],
+    classes_a: list[DEX.Class],
+    classes_b: list[DEX.Class],
+    mapping: dict[str, str],
     deobfuscation_mapping: EnigmaMapping,
 ) -> EnigmaMapping:
     enigma_classes = []
@@ -127,7 +126,7 @@ def deobfuscate(
         try:
             new_name = mapping[old_name]
         except KeyError:
-            logger.warn(f"failed to map class {enigma_class.display_name or '?'} ({enigma_class.name})")
+            logger.warning(f"failed to map class {enigma_class.display_name or '?'} ({enigma_class.name})")
             continue
 
         original_enigma_fields = enigma_class.fields.copy()
@@ -143,7 +142,7 @@ def deobfuscate(
             try:
                 field_a, field_b = [(f_a, f_b) for f_a, f_b in fields if f_a.name == enigma_field.name][0]
             except IndexError:
-                logger.warn(
+                logger.warning(
                     f"failed to map field {enigma_field.display_name} in class {enigma_class.display_name or '?'} ({enigma_class.name})"
                 )
                 continue
@@ -168,21 +167,21 @@ def deobfuscate(
             )
 
         for enigma_method in original_enigma_methods:
-            logger.warn(
+            logger.warning(
                 f"failed to map method {enigma_method.display_name} in class {enigma_class.display_name or '?'} ({enigma_class.name})"
             )
 
     return EnigmaMapping(enigma_classes)
 
 
-def match_class_fields(class_a: DEX.Class, class_b: DEX.Class) -> Dict[int, int]:
+def match_class_fields(class_a: DEX.Class, class_b: DEX.Class) -> dict[int, int]:
     fields_a = list(class_a.fields)
     fields_b = list(class_b.fields)
 
     return _match_items(fields_a, fields_b, encode_field)
 
 
-def match_class_methods(class_a: DEX.Class, class_b: DEX.Class) -> Dict[int, int]:
+def match_class_methods(class_a: DEX.Class, class_b: DEX.Class) -> dict[int, int]:
     methods_a = list(class_a.methods)
     methods_b = list(class_b.methods)
 
@@ -192,7 +191,7 @@ def match_class_methods(class_a: DEX.Class, class_b: DEX.Class) -> Dict[int, int
 T = TypeVar("T")
 
 
-def _match_items(items_a: List[T], items_b: List[T], encoder: Callable[[T], None], sentinals=True) -> Dict[T, T]:
+def _match_items(items_a: list[T], items_b: list[T], encoder: Callable[[T], None], sentinals=True) -> dict[T, T]:
     # surround the encodings with unique sentinal values to ensure mapping
     # happens even when there are no unique values
     if sentinals:

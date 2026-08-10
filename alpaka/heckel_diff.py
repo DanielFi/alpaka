@@ -1,6 +1,5 @@
-from typing import List, Any
-
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -31,7 +30,7 @@ class SymbolTable:
         return self.entries[symbol]
 
 
-def diff(old: List[Any], new: List[Any]):
+def diff(old: list[Any], new: list[Any]):
 
     symbol_table = SymbolTable()
 

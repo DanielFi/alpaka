@@ -1,11 +1,11 @@
-import click
-import logging
 import json
+import logging
 
-from .core import match_classes, deobfuscate
+import click
+
+from .core import deobfuscate, match_classes
 from .enigma import EnigmaMapping
-from .extraction import get_classes_from_dexs, extract_dexs_from_apk
-
+from .extraction import extract_dexs_from_apk, get_classes_from_dexs
 
 logger = logging.getLogger(__name__)
 

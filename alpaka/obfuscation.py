@@ -1,7 +1,6 @@
 import re
 
-import lief.DEX as DEX
-
+from lief import DEX
 
 OBFUSCATED_CLASS_NAME_PATTERN = re.compile(r"([^/]+/){,1}[^/]+|.+[/$][^/$]{,3}")
 OBFUSCATED_INNER_NAME_PATTERN = re.compile(r"\w[\w\d]{,2}")

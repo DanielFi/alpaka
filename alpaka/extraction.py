@@ -1,24 +1,22 @@
 import itertools
 import logging
 from tempfile import TemporaryDirectory
-from typing import List
 from zipfile import ZipFile
 
-import lief.DEX as DEX
-
+from lief import DEX
 
 logger = logging.getLogger(__name__)
 
 _DEX_CACHE = []  # hack to prevent segfaults (lief objects become invalid if the DEX.File is freed)
 
 
-def get_dex(dex_path: str) -> List[DEX.File]:
+def get_dex(dex_path: str) -> list[DEX.File]:
     dex = DEX.parse(dex_path)
     _DEX_CACHE.append(dex)
     return dex
 
 
-def extract_dexs_from_apk(apk_path: str) -> List[DEX.File]:
+def extract_dexs_from_apk(apk_path: str) -> list[DEX.File]:
     dexs = []
     tmp_dir = TemporaryDirectory()
 
@@ -35,5 +33,5 @@ def extract_dexs_from_apk(apk_path: str) -> List[DEX.File]:
     return dexs
 
 
-def get_classes_from_dexs(dexs: List[DEX.File]) -> List[DEX.Class]:
+def get_classes_from_dexs(dexs: list[DEX.File]) -> list[DEX.Class]:
     return [cls for dex in dexs for cls in sorted(dex.classes, key=lambda cls: cls.index) if cls.index != 4294967295]
