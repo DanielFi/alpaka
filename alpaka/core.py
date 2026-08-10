@@ -139,18 +139,18 @@ def deobfuscate(
     deobfuscation_mapping: EnigmaMapping,
 ) -> EnigmaMapping:
     enigma_classes = []
-    for enigma_class in deobfuscation_mapping:
-        old_name = f"L{enigma_class.name};"
+    for old_enigma_class in deobfuscation_mapping:
+        old_name = f"L{old_enigma_class.name};"
         try:
             new_name = mapping[old_name]
         except KeyError:
-            logger.warning(f"failed to map class {enigma_class.display_name or '?'} ({enigma_class.name})")
+            logger.warning(f"failed to map class {old_enigma_class.display_name or '?'} ({old_enigma_class.name})")
             continue
 
-        original_enigma_fields = enigma_class.fields.copy()
-        original_enigma_methods = set(enigma_class.methods)
-        enigma_class = EnigmaClass(new_name[1:-1], enigma_class.display_name)
-        enigma_classes.append(enigma_class)
+        original_enigma_fields = old_enigma_class.fields.copy()
+        original_enigma_methods = set(old_enigma_class.methods)
+        new_enigma_class = EnigmaClass(new_name[1:-1], old_enigma_class.display_name)
+        enigma_classes.append(new_enigma_class)
 
         class_a = next(cls for cls in classes_a if cls.fullname == old_name)
         class_b = next(cls for cls in classes_b if cls.fullname == new_name)
@@ -162,13 +162,13 @@ def deobfuscate(
             except IndexError:
                 logger.warning(
                     f"failed to map field {enigma_field.display_name} in "
-                    + f"class {enigma_class.display_name or '?'} ({enigma_class.name})"
+                    + f"class {new_enigma_class.display_name or '?'} ({new_enigma_class.name})"
                 )
                 continue
 
             # Workaround lief typing bug
             assert field_b.type is not None
-            enigma_class.fields.append(
+            new_enigma_class.fields.append(
                 EnigmaField(field_b.name, enigma_field.display_name, _lief_type_to_enigma(field_b.type))
             )
 
@@ -185,14 +185,14 @@ def deobfuscate(
 
             original_enigma_methods.remove(enigma_method)
 
-            enigma_class.methods.append(
+            new_enigma_class.methods.append(
                 EnigmaMethod(method_b.name, enigma_method.display_name, _lief_prototype_to_enigma(method_b.prototype))
             )
 
         for enigma_method in original_enigma_methods:
             logger.warning(
                 f"failed to map method {enigma_method.display_name} in "
-                + f"class {enigma_class.display_name or '?'} ({enigma_class.name})"
+                + f"class {new_enigma_class.display_name or '?'} ({new_enigma_class.name})"
             )
 
     return EnigmaMapping(enigma_classes)
