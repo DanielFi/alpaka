@@ -1,5 +1,7 @@
 import re
-from collections.abc import Iterable
+from collections.abc import Iterator
+from os import PathLike
+from pathlib import Path
 
 CLASS_PATTERN = re.compile(r"CLASS (\S+)(?: (\S+))?")
 FIELD_PATTERN = re.compile(r"\tFIELD (\S+) (\S+) (\S+)")
@@ -7,10 +9,10 @@ METHOD_PATTERN = re.compile(r"\tMETHOD (\S+) (\S+) (\S+)")
 
 
 class EnigmaField:
-    def __init__(self, name: str, display_name: str, type: str) -> None:
+    def __init__(self, name: str, display_name: str, field_type: str) -> None:
         self.name = name
         self.display_name = display_name
-        self.type = type
+        self.type = field_type
 
     def __str__(self) -> str:
         return f"FIELD {self.name} {self.display_name} {self.type}"
@@ -49,22 +51,24 @@ class EnigmaMapping:
     def __str__(self) -> str:
         return "\n".join(str(cls) for cls in self.classes)
 
-    def __iter__(self) -> Iterable[EnigmaClass]:
+    def __iter__(self) -> Iterator[EnigmaClass]:
         return iter(self.classes)
 
     @classmethod
-    def parse(cls, path: str) -> "EnigmaMapping":
+    def parse(cls, path: PathLike[str] | str) -> "EnigmaMapping":
         classes = []
 
-        with open(path) as f:
-            current_class = None
+        with Path(path).open() as f:
+            current_class: EnigmaClass | None = None
             for line in f:
                 if match := CLASS_PATTERN.match(line):
                     current_class = EnigmaClass(match.group(1), match.group(2))
                     classes.append(current_class)
                 elif match := FIELD_PATTERN.match(line):
+                    assert current_class is not None
                     current_class.fields.append(EnigmaField(match.group(1), match.group(2), match.group(3)))
                 elif match := METHOD_PATTERN.match(line):
+                    assert current_class is not None
                     current_class.methods.append(EnigmaMethod(match.group(1), match.group(2), match.group(3)))
 
         return cls(classes)

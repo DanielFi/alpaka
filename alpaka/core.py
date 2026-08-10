@@ -1,6 +1,6 @@
 import logging
 from collections import Counter
-from collections.abc import Callable
+from collections.abc import Callable, Generator, Hashable
 from typing import TypeVar
 
 from lief import DEX
@@ -10,11 +10,14 @@ from .enigma import EnigmaClass, EnigmaField, EnigmaMapping, EnigmaMethod
 from .extraction import get_classes_from_dexs
 from .heckel_diff import diff as heckel_diff
 from .obfuscation import is_obfuscated_class_name
+from .utils import is_primitive_type
 
 logger = logging.getLogger(__name__)
 
 
-def _get_vote_for_types(classes_a, classes_b, type_a, type_b):
+def _get_vote_for_types(
+    classes_a: dict[str, DEX.Class], classes_b: dict[str, DEX.Class], type_a: DEX.Type, type_b: DEX.Type
+) -> tuple[DEX.Class, DEX.Class] | None:
     type_a = type_a.underlying_array_type
     type_b = type_b.underlying_array_type
 
@@ -30,25 +33,36 @@ def _get_vote_for_types(classes_a, classes_b, type_a, type_b):
     return None
 
 
-def _gather_votes(classes_a, classes_b, class_a, class_b):
+def _gather_votes(
+    classes_a: dict[str, DEX.Class], classes_b: dict[str, DEX.Class], class_a: DEX.Class, class_b: DEX.Class
+) -> Generator[tuple[DEX.Class, DEX.Class], None, None]:
     for field_a, field_b in zip(class_a.fields, class_b.fields, strict=False):
+        # Workaround lief typing bug
+        assert field_a.type is not None and field_b.type is not None
+
         vote = _get_vote_for_types(classes_a, classes_b, field_a.type, field_b.type)
         if vote is not None:
             yield vote
 
     for method_a, method_b in zip(class_a.methods, class_b.methods, strict=False):
+        # Workaround lief typing bug
+        assert method_a.prototype is not None and method_b.prototype is not None
+        assert method_a.prototype.return_type is not None and method_b.prototype.return_type is not None
+
         vote = _get_vote_for_types(classes_a, classes_b, method_a.prototype.return_type, method_b.prototype.return_type)
         if vote is not None:
             yield vote
 
-        for param_a, param_b in zip(method_a.prototype.parameters_type, method_b.prototype.parameters_type, strict=False):
+        for param_a, param_b in zip(
+            method_a.prototype.parameters_type, method_b.prototype.parameters_type, strict=False
+        ):
             vote = _get_vote_for_types(classes_a, classes_b, param_a, param_b)
             if vote is not None:
                 yield vote
 
 
 def match_classes(
-    dexs_a: list[DEX.File], dexs_b: list[DEX.File], only_obfuscated: bool = False, propagate=True
+    dexs_a: list[DEX.File], dexs_b: list[DEX.File], only_obfuscated: bool = False, propagate: bool = True
 ) -> dict[DEX.Class, DEX.Class]:
     classes_a = get_classes_from_dexs(dexs_a)
     classes_b = get_classes_from_dexs(dexs_b)
@@ -72,11 +86,10 @@ def match_classes(
 
         logger.info(f"propagation votes: {len(votes)} ({votes.total()} total)")
 
-    if propagate:
         mapped_a = set(mapping.keys())
         mapped_b = set(mapping.values())
 
-        for class_a, class_b in sorted(votes, key=votes.get):
+        for class_a, class_b in sorted(votes, key=votes.__getitem__):
             if class_a in mapped_a or class_b in mapped_b:
                 continue
 
@@ -92,10 +105,10 @@ def match_classes(
     return mapping
 
 
-def _lief_type_to_enigma(type: DEX.Type) -> str:
-    if type.type == DEX.Type.TYPES.CLASS:
-        return str(type)
-    if type.type == DEX.Type.TYPES.PRIMITIVE:
+def _lief_type_to_enigma(dex_type: DEX.Type) -> str:
+    if dex_type.type == DEX.Type.TYPES.CLASS:
+        return str(dex_type)
+    if is_primitive_type(dex_type):
         return {
             DEX.Type.PRIMITIVES.BOOLEAN: "Z",
             DEX.Type.PRIMITIVES.BYTE: "B",
@@ -106,12 +119,17 @@ def _lief_type_to_enigma(type: DEX.Type) -> str:
             DEX.Type.PRIMITIVES.LONG: "J",
             DEX.Type.PRIMITIVES.SHORT: "S",
             DEX.Type.PRIMITIVES.VOID_T: "V",
-        }[type.value]
-    return "[" * type.dim + _lief_type_to_enigma(type.underlying_array_type)
+        }[dex_type.value]
+    return "[" * dex_type.dim + _lief_type_to_enigma(dex_type.underlying_array_type)
 
 
 def _lief_prototype_to_enigma(prototype: DEX.Prototype) -> str:
-    return f"({''.join([_lief_type_to_enigma(p) for p in prototype.parameters_type])}){_lief_type_to_enigma(prototype.return_type)}"
+    # Workaround lief typing bug
+    assert prototype.return_type is not None
+
+    parameters = "".join([_lief_type_to_enigma(p) for p in prototype.parameters_type])
+    return_type = _lief_type_to_enigma(prototype.return_type)
+    return f"({parameters}){return_type}"
 
 
 def deobfuscate(
@@ -143,18 +161,23 @@ def deobfuscate(
                 _field_a, field_b = next((f_a, f_b) for f_a, f_b in fields if f_a.name == enigma_field.name)
             except IndexError:
                 logger.warning(
-                    f"failed to map field {enigma_field.display_name} in class {enigma_class.display_name or '?'} ({enigma_class.name})"
+                    f"failed to map field {enigma_field.display_name} in "
+                    + f"class {enigma_class.display_name or '?'} ({enigma_class.name})"
                 )
                 continue
 
+            # Workaround lief typing bug
+            assert field_b.type is not None
             enigma_class.fields.append(
                 EnigmaField(field_b.name, enigma_field.display_name, _lief_type_to_enigma(field_b.type))
             )
 
         for method_a, method_b in zip(class_a.methods, class_b.methods, strict=False):
+            # Workaround lief typing bug
+            assert method_a.prototype is not None and method_b.prototype is not None
             for enigma_method in original_enigma_methods:
-                if enigma_method.name == method_a.name and enigma_method.prototype == _lief_prototype_to_enigma(
-                    method_a.prototype
+                if (enigma_method.name == method_a.name) and (
+                    enigma_method.prototype == _lief_prototype_to_enigma(method_a.prototype)
                 ):
                     break
             else:
@@ -168,20 +191,21 @@ def deobfuscate(
 
         for enigma_method in original_enigma_methods:
             logger.warning(
-                f"failed to map method {enigma_method.display_name} in class {enigma_class.display_name or '?'} ({enigma_class.name})"
+                f"failed to map method {enigma_method.display_name} in "
+                + f"class {enigma_class.display_name or '?'} ({enigma_class.name})"
             )
 
     return EnigmaMapping(enigma_classes)
 
 
-def match_class_fields(class_a: DEX.Class, class_b: DEX.Class) -> dict[int, int]:
+def match_class_fields(class_a: DEX.Class, class_b: DEX.Class) -> dict[DEX.Field, DEX.Field]:
     fields_a = list(class_a.fields)
     fields_b = list(class_b.fields)
 
     return _match_items(fields_a, fields_b, encode_field)
 
 
-def match_class_methods(class_a: DEX.Class, class_b: DEX.Class) -> dict[int, int]:
+def match_class_methods(class_a: DEX.Class, class_b: DEX.Class) -> dict[DEX.Method, DEX.Method]:
     methods_a = list(class_a.methods)
     methods_b = list(class_b.methods)
 
@@ -191,9 +215,13 @@ def match_class_methods(class_a: DEX.Class, class_b: DEX.Class) -> dict[int, int
 T = TypeVar("T")
 
 
-def _match_items(items_a: list[T], items_b: list[T], encoder: Callable[[T], None], sentinals=True) -> dict[T, T]:
+def _match_items(
+    items_a: list[T], items_b: list[T], encoder: Callable[[T], Hashable], sentinals: bool = True
+) -> dict[T, T]:
     # surround the encodings with unique sentinal values to ensure mapping
     # happens even when there are no unique values
+    encodings_a: list[Hashable]
+    encodings_b: list[Hashable]
     if sentinals:
         encodings_a = ["START"]
         encodings_b = ["START"]

@@ -23,7 +23,11 @@ classifiers = [
     "Topic :: Security",
 ]
 
-dependencies = ["click", "lief"]
+dependencies = [
+    "click",
+    "lief",
+    "typing-extensions>=4.16.0",
+]
 
 [dependency-groups]
 dev = ["ruff", "mypy", "pyrefly", "ty", "basedpyright"]
