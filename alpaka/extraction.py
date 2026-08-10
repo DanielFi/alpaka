@@ -20,7 +20,7 @@ def get_dex(dex_path: str) -> DEX.File:
 
 
 def extract_dexs_from_apk(apk_path: str) -> list[DEX.File]:
-    dexs = []
+    dexs: list[DEX.File] = []
     tmp_dir = TemporaryDirectory()
 
     with ZipFile(apk_path) as z:

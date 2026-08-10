@@ -31,13 +31,15 @@ def match(only_obfuscated: bool, no_propagation: bool, deobfuscation: str | None
 
     mapping = match_classes(dexs_a, dexs_b, only_obfuscated=only_obfuscated, propagate=not no_propagation)
 
-    mapping = {k.fullname: v.fullname for k, v in mapping.items()}
+    name_mapping = {k.fullname: v.fullname for k, v in mapping.items()}
 
     if deobfuscation_mapping is None:
-        click.echo(json.dumps(mapping, indent=4))
+        click.echo(json.dumps(name_mapping, indent=4))
     else:
         click.echo(
-            deobfuscate(get_classes_from_dexs(dexs_a), get_classes_from_dexs(dexs_b), mapping, deobfuscation_mapping)
+            deobfuscate(
+                get_classes_from_dexs(dexs_a), get_classes_from_dexs(dexs_b), name_mapping, deobfuscation_mapping
+            )
         )
 
 

@@ -74,14 +74,14 @@ def match_classes(
 
     logger.info(f"heckel diff mapped classes: {len(mapping)}")
 
-    classes_a = {cls.fullname: cls for cls in classes_a}
-    classes_b = {cls.fullname: cls for cls in classes_b}
+    classes_map_a = {cls.fullname: cls for cls in classes_a}
+    classes_map_b = {cls.fullname: cls for cls in classes_b}
 
     if propagate:
         votes = Counter(
             vote
             for class_a, class_b in mapping.items()
-            for vote in _gather_votes(classes_a, classes_b, class_a, class_b)
+            for vote in _gather_votes(classes_map_a, classes_map_b, class_a, class_b)
         )
 
         logger.info(f"propagation votes: {len(votes)} ({votes.total()} total)")
@@ -138,7 +138,7 @@ def deobfuscate(
     mapping: dict[str, str],
     deobfuscation_mapping: EnigmaMapping,
 ) -> EnigmaMapping:
-    enigma_classes = []
+    enigma_classes: list[EnigmaClass] = []
     for old_enigma_class in deobfuscation_mapping:
         old_name = f"L{old_enigma_class.name};"
         try:
@@ -236,10 +236,12 @@ def _match_items(
         encodings_a.append("END")
         encodings_b.append("END")
 
-    mapping, _reverse_mapping = heckel_diff(encodings_a, encodings_b)
+    line_mapping, _reverse_mapping = heckel_diff(encodings_a, encodings_b)
     if sentinals:
-        mapping = {items_a[k - 1]: items_b[v - 1] for k, v in mapping.items() if k != 0 and k != len(encodings_a) - 1}
+        mapping = {
+            items_a[k - 1]: items_b[v - 1] for k, v in line_mapping.items() if k != 0 and k != len(encodings_a) - 1
+        }
     else:
-        mapping = {items_a[k]: items_b[v] for k, v in mapping.items()}
+        mapping = {items_a[k]: items_b[v] for k, v in line_mapping.items()}
 
     return mapping

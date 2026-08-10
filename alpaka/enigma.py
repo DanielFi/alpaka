@@ -56,7 +56,7 @@ class EnigmaMapping:
 
     @classmethod
     def parse(cls, path: PathLike[str] | str) -> "EnigmaMapping":
-        classes = []
+        classes: list[EnigmaClass] = []
 
         with Path(path).open() as f:
             current_class: EnigmaClass | None = None
