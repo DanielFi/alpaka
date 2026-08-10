@@ -147,19 +147,23 @@ def deobfuscate(
             logger.warning(f"failed to map class {old_enigma_class.display_name or '?'} ({old_enigma_class.name})")
             continue
 
+        try:
+            class_a = next(cls for cls in classes_a if cls.fullname == old_name)
+            class_b = next(cls for cls in classes_b if cls.fullname == new_name)
+        except StopIteration:
+            logger.warning(f"failed to find classes {old_name} / {new_name}")
+            continue
+
         original_enigma_fields = old_enigma_class.fields.copy()
         original_enigma_methods = set(old_enigma_class.methods)
         new_enigma_class = EnigmaClass(new_name[1:-1], old_enigma_class.display_name)
         enigma_classes.append(new_enigma_class)
 
-        class_a = next(cls for cls in classes_a if cls.fullname == old_name)
-        class_b = next(cls for cls in classes_b if cls.fullname == new_name)
-
         fields = list(zip(class_a.fields, class_b.fields, strict=False))
         for enigma_field in original_enigma_fields:
             try:
                 _field_a, field_b = next((f_a, f_b) for f_a, f_b in fields if f_a.name == enigma_field.name)
-            except IndexError:
+            except StopIteration:
                 logger.warning(
                     f"failed to map field {enigma_field.display_name} in "
                     + f"class {new_enigma_class.display_name or '?'} ({new_enigma_class.name})"
