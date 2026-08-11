@@ -6,21 +6,17 @@ build-backend = "flit_core.buildapi"
 name = "alpaka-re"
 version = "0.3.0"
 description = "A tool for mapping classes between different versions of the same APK."
-authors = [
-    { name = "Daniel Firer", email = "danielfirefire@gmail.com" },
-]
+authors = [{ name = "Daniel Firer", email = "danielfirefire@gmail.com" }]
 license = { file = "LICENSE" }
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.11"
 keywords = ["apk", "android", "mapping", "reverse-engineering", "deobfuscation"]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Topic :: Software Development :: Libraries :: Python Modules",
@@ -30,7 +26,11 @@ classifiers = [
 dependencies = [
     "click",
     "lief",
+    "typing-extensions>=4.16.0",
 ]
+
+[dependency-groups]
+dev = ["ruff", "mypy", "pyrefly", "ty", "basedpyright"]
 
 [project.urls]
 Homepage = "https://github.com/DanielFi/alpaka"
@@ -42,3 +42,59 @@ alpaka = "alpaka.cli:main"
 
 [tool.flit.module]
 name = "alpaka"
+
+
+#### Tools Configuration ####
+
+[tool.pyright]
+typeCheckingMode = "strict"
+
+[tool.pyrefly]
+preset = "strict"
+
+[tool.ty.rules]
+unused-ignore-comment = "error"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+extend-select = [
+    "YTT",   # flake8-2020
+    "ANN",   # flake8-annotations
+    "ASYNC", # flake8-async
+    "BLE",   # flake8-blind-except
+    "B",     # flake8-bugbear
+    "A",     # flake8-builtins
+    "C4",    # flake8-comprehensions
+    "DTZ",   # flake8-datetimez
+    "ISC",   # flake8-implicit-str-concat
+    "ICN",   # flake8-import-conventions
+    "LOG",   # flake8-logging
+    "INP",   # flake8-no-pep420
+    "PIE",   # flake8-pie
+    "PYI",   # flake8-pyi
+    "RET",   # flake8-return
+    "SIM",   # flake8-simplify
+    "SLOT",  # flake8-slots
+    "TID",   # flake8-tidy-imports
+    "TC",    # flake8-type-checking
+    "PTH",   # flake8-use-pathlib
+    "FLY",   # flake8-flynt
+    "I",     # isort
+    "C90",   # maccabe
+    "N",     # pep8-naming
+    "E",     # pycodestyle
+    "W",     # pycodestyle
+    "F",     # pyflakes
+    "PGH",   # pygrep-hooks
+    "PL",    # pylint
+    "UP",    # pyupgrade
+    "FURB",  # refurb
+    "RUF",   # ruff
+]
+
+ignore = [
+    "SIM108", # if-else-block-instead-of-if-exp
+    "ISC003", # explicit-string-concatenation
+]

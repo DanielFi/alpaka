@@ -1,5 +1,4 @@
-from typing import List, Any
-
+from collections.abc import Hashable
 from dataclasses import dataclass
 
 
@@ -11,33 +10,32 @@ class Symbol:
 
 
 class SymbolTable:
+    def __init__(self) -> None:
+        self.entries: dict[Hashable, Symbol] = {}
 
-    def __init__(self):
-        self.entries = {}
-
-    def insert_old(self, symbol, line):
+    def insert_old(self, symbol: Hashable, line: int) -> None:
         if symbol in self.entries:
             self.entries[symbol].old_count += 1
             self.entries[symbol].olno = line
         else:
             self.entries[symbol] = Symbol(1, 0, line)
 
-    def insert_new(self, symbol):
+    def insert_new(self, symbol: Hashable) -> None:
         if symbol in self.entries:
             self.entries[symbol].new_count += 1
         else:
             self.entries[symbol] = Symbol(0, 1, 0)
 
-    def __getitem__(self, symbol):
+    def __getitem__(self, symbol: Hashable) -> Symbol:
         return self.entries[symbol]
 
 
-def diff(old : List[Any], new : List[Any]):
+def diff(old: list[Hashable], new: list[Hashable]) -> tuple[dict[int, int], dict[int, int]]:  # noqa: C901
 
     symbol_table = SymbolTable()
 
-    mapping = {}
-    reverse_mapping = {}
+    mapping: dict[int, int] = {}
+    reverse_mapping: dict[int, int] = {}
 
     # Pass 1
     for symbol in new:
